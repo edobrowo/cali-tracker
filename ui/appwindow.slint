@@ -1,29 +1,50 @@
 import { Button, VerticalBox, HorizontalBox } from "std-widgets.slint";
 
-component AddRepsButton inherits TouchArea {
-    in property <int> rep-increment;
+global Palette {
+    out property <color> primary: #51565F;
+    out property <color> background: #222831;
+    out property <color> surface: #31363F;
+    out property <color> text: #EEEEEE;
+    out property <color> text-secondary: #ABABAB;
+    out property <color> border;
 
-    container := Rectangle {
-        height: 24px;
-        width: 24px;
-        border-radius: 4px;
-        background: #000000;
+    out property <color> primary-hightlight: #71767F;
+    out property <color> text-highlight: #FFFFFF;
+    out property <color> text-secondary-highlight: #DDDDDD;
+}
+
+global Size {
+    out property <length> rep-counter-height: 50px;
+    out property <length> workout-font-size: 20px;
+    out property <length> increment-button-font-size: 18px;
+}
+
+component IncrementButton inherits TouchArea {
+    in property <int> increment;
+    in property <length> radius;
+
+    width: radius * 2;
+    height: radius * 2;
+
+    i-container := Rectangle {
+        border-radius: root.width / 2;
+        background: Palette.primary;
 
         HorizontalLayout {
-            padding: 4px;
-
-            rep-text := Text {
-                text: "+" + rep-increment;
-                color: #FFFFFF;
-                font-size: 20px;
+            i-text := Text {
+                text: "+" + increment;
+                vertical-alignment: center;
+                horizontal-alignment: center;
+                color: Palette.text-secondary;
+                font-size: Size.increment-button-font-size;
             }
         }
     }
 
     states [
         pressed when root.pressed: {
-            container.background: #777777;
-            rep-text.color: #000000;
+            i-container.background: Palette.primary-hightlight;
+            i-text.color: Palette.text-secondary-highlight;
         }
     ]
 }
@@ -34,33 +55,55 @@ component CaliCounter inherits Rectangle {
     in property <string> workout-name;
     in property <int> rep-count;
 
-    height: 24px;
+    height: Size.rep-counter-height;
+    background: Palette.surface;
+    border-radius: 5px;
 
-    HorizontalBox {
+    i-container := HorizontalBox {
         padding: 5px;
+        padding-left: 10px;
+        padding-right: 10px;
         alignment: space-between;
 
         Text {
+            width: 100px;
             text: workout-name;
-            preferred-width: 50px;
+            color: Palette.text;
+            font-size: Size.workout-font-size;
+            vertical-alignment: center;
         }
 
         Text {
+            width: 50px;
             text: rep-count;
+            color: Palette.text;
+            font-size: Size.workout-font-size;
+            vertical-alignment: center;
         }
 
-        private property <[int]> rep-increments: [1, 3, 5, 10];
+        i-increment-buttons := HorizontalBox {
+            private property <[int]> rep-increments: [1, 3, 5, 10];
 
-        for increment in rep-increments: AddRepsButton {
-            rep-increment: increment;
-            clicked => {
-                root.add-reps(increment);
+            padding: 0px;
+            height: parent.height;
+
+            for increment in rep-increments: IncrementButton {
+                increment: increment;
+                radius: Size.rep-counter-height / 2 - 5px;
+                clicked => {
+                    root.add-reps(increment);
+                }
             }
         }
     }
 }
 
 export component AppWindow inherits Window {
+    min-width: 400px;
+    min-height: 300px;
+
+    background: Palette.background;
+
     VerticalBox {
         CaliCounter {
             workout-name: "Pushups";
