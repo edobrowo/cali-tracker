@@ -1,4 +1,4 @@
-import { Button, VerticalBox, HorizontalBox } from "std-widgets.slint";
+import { Button, VerticalBox, HorizontalBox, LineEdit, ScrollView } from "std-widgets.slint";
 
 global Palette {
     out property <color> primary: #51565F;
@@ -16,23 +16,26 @@ global Palette {
 global Size {
     out property <length> rep-counter-height: 50px;
     out property <length> workout-font-size: 20px;
+    out property <length> input-font-size: 12px;
     out property <length> increment-button-font-size: 18px;
 }
 
-component IncrementButton inherits TouchArea {
-    in property <int> increment;
-    in property <length> radius;
+enum Sign {
+    positive,
+    negative
+}
 
-    width: radius * 2;
-    height: radius * 2;
+component CaliButton inherits TouchArea {
+    in property <string> button-text;
+    in property <length> border-radius;
 
     i-container := Rectangle {
-        border-radius: root.width / 2;
+        border-radius: border-radius;
         background: Palette.primary;
 
         HorizontalLayout {
             i-text := Text {
-                text: "+" + increment;
+                text: button-text;
                 vertical-alignment: center;
                 horizontal-alignment: center;
                 color: Palette.text-secondary;
@@ -47,6 +50,30 @@ component IncrementButton inherits TouchArea {
             i-text.color: Palette.text-secondary-highlight;
         }
     ]
+}
+
+component IncrementButton inherits CaliButton {
+    in property <int> increment;
+    in property <length> radius;
+
+    width: radius * 2;
+    height: radius * 2;
+
+    border-radius: self.width / 2;
+
+    states [
+        positive when root.increment > 0: {
+            button-text: "+" + increment;
+        }
+        negative when root.increment < 0: {
+            button-text: increment;
+        }
+    ]
+}
+
+struct CaliData {
+    name: string,
+    reps-today: int,
 }
 
 component CaliCounter inherits Rectangle {
@@ -81,11 +108,27 @@ component CaliCounter inherits Rectangle {
             vertical-alignment: center;
         }
 
-        i-increment-buttons := HorizontalBox {
+        // LineEdit {
+        //     width: 50px;
+        //     height: 20px;
+        //     placeholder-text: "Enter reps";
+        //     font-size: Size.input-font-size;
+        // }
+
+        i-buttons := HorizontalBox {
             private property <[int]> rep-increments: [1, 3, 5, 10];
 
             padding: 0px;
             height: parent.height;
+
+            // IncrementButton {
+            //     property <Sign> sign: Sign.positive;
+            //     clicked => {
+            //         self.sign = sign == Sign.positive ? Sign.negative : Sign.positive;
+            //         // parent.rep-increments = self.sign == Sign.positive ? [1, 3, 5, 10] : [-1, -3, -5, -10];
+            //         self.button-text = sign == Sign.positive ? "+" : "-";
+            //     }
+            // }
 
             for increment in rep-increments: IncrementButton {
                 increment: increment;
@@ -99,22 +142,53 @@ component CaliCounter inherits Rectangle {
 }
 
 export component AppWindow inherits Window {
-    min-width: 400px;
-    min-height: 300px;
+    callback add-cali(CaliData);
+
+    in property <[CaliData]> cali_counters: [
+        { name: "Pushups" },
+        { name: "Situps" },
+        { name: "Pullups" },
+    ];
+
+    min-width: 500px;
+    min-height: 400px;
 
     background: Palette.background;
 
     VerticalBox {
-        CaliCounter {
-            workout-name: "Pushups";
+        alignment: space-between;
+        padding: 0px;
+
+        ScrollView {
+            height: 400px;
+            VerticalBox {
+                for data in cali_counters: CaliCounter {
+                    workout-name: data.name;
+                }
+            }
         }
 
-        CaliCounter {
-            workout-name: "Situps";
-        }
+        VerticalBox {
+            padding: 10px;
+            CaliButton {
+                button-text: "Add workout";
+                border-radius: 5px;
 
-        CaliCounter {
-            workout-name: "Pullups";
+                height: Size.rep-counter-height;
+
+                // todo uhhh how get name lol
+                clicked => {
+                    root.add-cali({ name: "" });
+                }
+            }
         }
     }
 }
+
+// TODO
+// text input for granular rep adding/removing
+// remove reps button
+// remove workout button
+
+// to become extra rusty, we can persist rep counts on a separate thread
+// then we truly will be fearless
